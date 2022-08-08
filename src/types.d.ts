@@ -1,0 +1,1 @@
+export type HttpStatusCode = 200 | 201 | 204 | 404 | 500;
