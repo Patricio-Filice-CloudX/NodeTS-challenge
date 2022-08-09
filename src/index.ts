@@ -1,33 +1,34 @@
 import "reflect-metadata";
 import express from 'express';
 import logger from 'morgan';
-import { Container } from 'inversify';
-import { InversifyExpressServer } from 'inversify-express-utils';
+import { InversifyExpressServer, RoutingConfig } from 'inversify-express-utils';
+import "./controllers/comments-controller";
 import "./controllers/articles-controller";
 import { start } from './start';
-import { IArticleService } from "./services/interfaces/iarticle-service";
-import SERVICE_IDENTIFIERS from "./constants/service-identifiers";
-import ArticleService from "./services/article-service";
-import { IArticleRepository } from "./persistence/interfaces/iarticle-repository";
-import { ArticleRepository } from "./persistence/article-repository";
+import container from "./inversify.container";
+import { errorBusinessHandler } from "./middlewares/handlers/errors/error-business-handler";
+import { errorHandler } from "./middlewares/handlers/errors/error-handler";
+import { apiNotFoundHandler } from "./middlewares/handlers/api-not-found-handler";
+import { mongooseValidationHandler } from "./middlewares/handlers/errors/mongoose-validation-handler";
 
 const PORT = 3000;
-const DATABASE_CONNECTION = "mongodb://localhost";
+const DATABASE_CONNECTION = 'mongodb://localhost';
+const LOGGER_CONFIGURATION = 'dev';
 
-let container = new Container();
-container.bind<IArticleService>(SERVICE_IDENTIFIERS.ARTICLE_SERVICE).to(ArticleService);
-container.bind<IArticleRepository>(SERVICE_IDENTIFIERS.ARTICLE_REPOSITORY).to(ArticleRepository);
+const server = new InversifyExpressServer(container, null, { rootPath: '/api' } as RoutingConfig);
 
-// create server
-let server = new InversifyExpressServer(container);
 server.setConfig((app) => {
-  // add body parser
   app.use(express.urlencoded({
     extended: true
   }));
   app.use(express.json());
-  app.use(logger('dev'));
+  app.use(logger(LOGGER_CONFIGURATION));
 });
-let app = server.build();
+const app = server.build();
+
+app.use(errorBusinessHandler,
+        mongooseValidationHandler,      
+        errorHandler,
+        apiNotFoundHandler);
 
 start(app, DATABASE_CONNECTION, PORT);

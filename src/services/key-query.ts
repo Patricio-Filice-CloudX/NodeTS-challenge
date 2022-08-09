@@ -1,8 +1,8 @@
-export class KeyQuery<R, K extends keyof R> {
-    key: K;
-    private query: (request: R, keyQuery: KeyQuery<R, K>) => (qo: Map<string, any>) => Map<string, any>;
+export class KeyQuery<R> {
+    key: keyof R;
+    private query: (request: R, keyQuery: KeyQuery<R>) => (qo: Record<keyof R, any>) => Record<keyof R, any>;
 
-    constructor(key: K, query: (request: R, keyQuery: KeyQuery<R, K>) => (qo: Map<string, any>) => Map<string, any>) {
+    constructor(key: keyof R, query: (request: R, keyQuery: KeyQuery<R>) => (qo: Record<keyof R, any>) => Record<keyof R, any>) {
         this.key = key;
         this.query = query;
     }
@@ -11,7 +11,7 @@ export class KeyQuery<R, K extends keyof R> {
         return !!request[this.key];
     }
 
-    getQuery(request: R): (qo: Map<string, any>) => Map<string, any> {
+    getQuery(request: R): (qo: Record<keyof R, any>) => Record<keyof R, any> {
         return this.query(request, this);
     }
 }

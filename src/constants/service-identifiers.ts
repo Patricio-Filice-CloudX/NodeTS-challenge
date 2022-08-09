@@ -1,6 +1,7 @@
 const SERVICE_IDENTIFIERS = {
     ARTICLE_SERVICE: Symbol.for("ArticleService"),
-    ARTICLE_REPOSITORY: Symbol.for("ArticleRepository")
+    COMMENT_SERVICE: Symbol.for("CommentService"),
+    QUERY_SERVICE: Symbol.for("QueryService")
 };
 
 export default SERVICE_IDENTIFIERS;

@@ -4,6 +4,7 @@ export interface IArticle extends Document {
     title: string;
     body: string;
     author: string;
+    id: string;
 }
 
 const articleSchema = new Schema<IArticle>({

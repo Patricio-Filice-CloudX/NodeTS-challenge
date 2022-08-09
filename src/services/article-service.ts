@@ -1,17 +1,20 @@
 import { Request } from "express";
 import { inject, injectable } from "inversify";
+import REPOSITORY_IDENTIFIERS from "../constants/repository-identifiers";
 import SERVICE_IDENTIFIERS from "../constants/service-identifiers";
 import { IArticle } from "../models/article.model";
 import { IArticleRepository } from "../persistence/interfaces/iarticle-repository";
+import { ICommentRepository } from "../persistence/interfaces/icomment-repository";
 import { IArticleService } from "./interfaces/iarticle-service";
-//import { KeyQuery } from "./key-query";
-import { QueryService } from "./query-service";
+import { IQueryService } from "./interfaces/iquery-service";
+import { KeyQuery } from "./key-query";
 
 @injectable()
-export default class ArticleService extends QueryService implements IArticleService {
-    constructor(@inject(SERVICE_IDENTIFIERS.ARTICLE_REPOSITORY) private readonly articleRepository: IArticleRepository) {
-        super()
-     }
+export default class ArticleService implements IArticleService {
+    constructor(@inject(REPOSITORY_IDENTIFIERS.ARTICLE_REPOSITORY) private readonly articleRepository: IArticleRepository,
+                @inject(REPOSITORY_IDENTIFIERS.COMMENT_REPOSITORY) private readonly commentRepository: ICommentRepository,
+                @inject(SERVICE_IDENTIFIERS.QUERY_SERVICE) private readonly queryService: IQueryService) { }
+
 
     public async create(request: Request): Promise<string> {
         const article = {
@@ -24,16 +27,50 @@ export default class ArticleService extends QueryService implements IArticleServ
         return persistedArticle.id;
     }
 
-    public async list(_request: Request): Promise<IArticle[]> {
-        //const queryObject = this.createQueryObject<any, any>(request.params, [
-            /*new KeyQuery("title", this.addRegex),
-            new KeyQuery("author", this.addRegex),
-            new KeyQuery("body", this.addRegex)*/
-        //]);
-        return this.articleRepository.list({});
+    public async list(request: Request): Promise<IArticle[]> {
+        const queryParams = {
+            title: request.query.title,
+            author: request.query.author,
+            body: request.query.body
+        };
+
+        const queryObject = this.queryService.createQueryObject(queryParams, [
+            new KeyQuery("title", this.queryService.addRegex),
+            new KeyQuery("author", this.queryService.addRegex),
+            new KeyQuery("body", this.queryService.addRegex)
+        ]);
+        const articlesRepository = await this.articleRepository.list(queryObject);
+        return articlesRepository.map(ar => {
+            return {
+                title: ar.title,
+                body: ar.body,
+                author: ar.author,
+                id: ar._id
+            } as IArticle
+        });
     }
 
-    public async get(request: Request): Promise<IArticle> {
-        return this.articleRepository.find(request.params.id);
+    async get(request: Request): Promise<IArticle> {
+        const articleRepository = await this.articleRepository.find(request.params.articleId);
+        return {
+            title: articleRepository.title,
+            author: articleRepository.author,
+            body: articleRepository.body
+        } as IArticle;
+    }
+
+    update(request: Request): Promise<void> {
+        const article = {
+            title: request.body.title,
+            body: request.body.body,
+            author: request.body.author
+        } as IArticle;
+        return this.articleRepository.update(request.params.articleId, article);
+    }
+
+    async delete(request: Request): Promise<void> {
+        const deleteArticlePromise = this.articleRepository.delete(request.params.articleId);
+        const deleteCommentsPromise = this.commentRepository.deleteMany({ article: request.params.articleId });
+        await Promise.all([deleteArticlePromise, deleteCommentsPromise]);
     }
 }

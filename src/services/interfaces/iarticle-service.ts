@@ -1,10 +1,4 @@
-import { Request } from "express";
 import { IArticle } from "../../models/article.model";
+import { ICrudService } from "./icrud-service";
 
-export interface IArticleService {
-    create(request: Request): Promise<string>;
-
-    list(request: Request): Promise<IArticle[]>;
-
-    get(request: Request): Promise<IArticle>;
-}
+export interface IArticleService extends ICrudService<IArticle> { }
