@@ -1,19 +1,33 @@
 import { injectable } from 'inversify';
-import { FilterQuery, Model, Document, HydratedDocument, Query, LeanDocument, Require_id, UpdateQuery } from 'mongoose'
+import { FilterQuery, Model, Document, HydratedDocument, Query, UpdateQuery, LeanDocument } from 'mongoose'
 import { EntityNotFoundError } from '../errors/entity-not-found-error';
+import { PaginationRequest } from '../requests/paginaton-request';
 import { EntityName } from '../types';
 import { IRepository } from './interfaces/irepository';
+import { PaginatedResult } from './paginated-result';
 
 @injectable()
 export default abstract class Repository<TDocument extends Document> implements IRepository<TDocument> {
     
     protected abstract entityName: EntityName;
 
-    list(query: FilterQuery<TDocument>): Promise<TDocument extends Document<any, any, any> ? LeanDocument<HydratedDocument<TDocument, {}, {}>>[] : LeanDocument<Require_id<TDocument>>[]> {
-        return this.getModel()
-                   .find(query)
-                   .lean()
-                   .exec();
+    async list(query: FilterQuery<TDocument>, paginationRequest: PaginationRequest, mapTo: (document: LeanDocument<HydratedDocument<TDocument, {}, {}>>) => TDocument): Promise<PaginatedResult<TDocument>> {
+        const totalCountPromise =  this.getModel()
+                                       .count(query)                                      
+                                       .exec();
+
+        /// Won't scale with large data sets, it's recommended to use cursors. Weren't implemented to reduce the complexity of the challenge.
+        const pageItemsPromise = this.getModel()
+                                     .find(query)
+                                     .lean()
+                                     .sort(paginationRequest.getSort())
+                                     .skip(paginationRequest.getSkipped())
+                                     .limit(paginationRequest.pageSize)
+                                     .exec();
+
+        const [totalCount, pageItems] = await Promise.all([totalCountPromise, pageItemsPromise]);
+        const pageCount = Math.floor((totalCount - 1) / paginationRequest.pageSize) + 1;
+        return new PaginatedResult(totalCount, pageCount, pageItems.map(d => mapTo(d)));
     }
 
     async find(id: string): Promise<TDocument> {

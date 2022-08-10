@@ -1,7 +1,9 @@
-import { Document, FilterQuery, HydratedDocument, LeanDocument, Model, Require_id, UpdateQuery } from "mongoose";
+import { Document, FilterQuery, HydratedDocument, LeanDocument, Model, UpdateQuery } from "mongoose";
+import { PaginationRequest } from "../../requests/paginaton-request";
+import { PaginatedResult } from "../paginated-result";
 
 export interface IRepository<TDocument extends Document> {
-    list(query: FilterQuery<Model<TDocument>>): Promise<TDocument extends Document<any, any, any> ? LeanDocument<HydratedDocument<TDocument, {}, {}>>[] : LeanDocument<Require_id<TDocument>>[]>;
+    list(query: FilterQuery<Model<TDocument>>, paginationRequest: PaginationRequest, mapTo: (document: LeanDocument<HydratedDocument<TDocument, {}, {}>>) => TDocument): Promise<PaginatedResult<TDocument>>;
 
     find(id: string): Promise<TDocument>;
 

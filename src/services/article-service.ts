@@ -5,6 +5,7 @@ import SERVICE_IDENTIFIERS from "../constants/service-identifiers";
 import { IArticle } from "../models/article.model";
 import { IArticleRepository } from "../persistence/interfaces/iarticle-repository";
 import { ICommentRepository } from "../persistence/interfaces/icomment-repository";
+import { PaginatedResult } from "../persistence/paginated-result";
 import { IArticleService } from "./interfaces/iarticle-service";
 import { IQueryService } from "./interfaces/iquery-service";
 import { KeyQuery } from "./key-query";
@@ -27,7 +28,7 @@ export default class ArticleService implements IArticleService {
         return persistedArticle.id;
     }
 
-    public async list(request: Request): Promise<IArticle[]> {
+    public list(request: Request): Promise<PaginatedResult<IArticle>> {
         const queryParams = {
             title: request.query.title,
             author: request.query.author,
@@ -39,15 +40,16 @@ export default class ArticleService implements IArticleService {
             new KeyQuery("author", this.queryService.addRegex),
             new KeyQuery("body", this.queryService.addRegex)
         ]);
-        const articlesRepository = await this.articleRepository.list(queryObject);
-        return articlesRepository.map(ar => {
-            return {
-                title: ar.title,
-                body: ar.body,
-                author: ar.author,
-                id: ar._id
-            } as IArticle
-        });
+        return this.articleRepository.list(queryObject,
+                                           this.queryService.getPaginatedRequest<IArticle>(request, "title"),
+                                           ar => {
+                                                return {
+                                                    title: ar.title,
+                                                    body: ar.body,
+                                                    author: ar.author,
+                                                    id: ar._id
+                                                } as IArticle
+                                            });
     }
 
     async get(request: Request): Promise<IArticle> {

@@ -6,6 +6,7 @@ import { IArticle } from "../models/article.model";
 import { IComment } from "../models/comment.model";
 import { IArticleRepository } from "../persistence/interfaces/iarticle-repository";
 import { ICommentRepository } from "../persistence/interfaces/icomment-repository";
+import { PaginatedResult } from "../persistence/paginated-result";
 import { ICommentService } from "./interfaces/icomment-service";
 import { IQueryService } from "./interfaces/iquery-service";
 import { KeyQuery } from "./key-query";
@@ -30,7 +31,7 @@ export class CommentService implements ICommentService {
         });
     }
     
-    public async list(request: Request): Promise<IComment[]> {
+    public list(request: Request): Promise<PaginatedResult<IComment>> {
         const queryParams = {
             author: request.query.author,
             body: request.query.body
@@ -40,14 +41,15 @@ export class CommentService implements ICommentService {
             new KeyQuery("author", this.queryService.addRegex),
             new KeyQuery("body", this.queryService.addRegex)
         ]);
-        const commentsRepository = await this.commentRepository.list(queryObject);
-        return commentsRepository.map(cr => {
-            return {
-                body: cr.body,
-                author: cr.author,
-                id: cr._id
-            } as IComment
-        });
+        return this.commentRepository.list(queryObject,
+                                           this.queryService.getPaginatedRequest<IComment>(request, "author"),
+                                           cr => {
+                                            return {
+                                                    body: cr.body,
+                                                    author: cr.author,
+                                                    id: cr._id
+                                                } as IComment
+                                            });
     }
 
     async get(request: Request): Promise<IComment> {
