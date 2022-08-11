@@ -40,6 +40,7 @@ export default class ArticleService implements IArticleService {
             new KeyQuery("author", this.queryService.addRegex),
             new KeyQuery("body", this.queryService.addRegex)
         ]);
+
         return this.articleRepository.list(queryObject,
                                            this.queryService.getPaginatedRequest<IArticle>(request, "title"),
                                            ar => {

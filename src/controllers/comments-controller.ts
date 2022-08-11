@@ -5,7 +5,7 @@ import HEADERS from "../constants/headers";
 import SERVICE_IDENTIFIERS from "../constants/service-identifiers";
 import { ICommentService } from "../services/interfaces/icomment-service";
 import { ModelCreated } from "../services/model-created";
-
+ 
 @controller("/articles/:articleId/comments")
 export class CommentsController extends BaseHttpController {
 
@@ -26,13 +26,13 @@ export class CommentsController extends BaseHttpController {
     }
 
     @httpPost("/")
-    public async post(@request() req: Request, @response() _res: Response) {
+    public async create(@request() req: Request, @response() _res: Response) {
         const commentId = await this.commentService.create(req);
         return this.created(HEADERS.LOCATION.CREATE(req, commentId), new ModelCreated(commentId));
     }
 
     @httpPut("/:commentId")
-    public async put(@request() req: Request, @response() res: Response) {
+    public async update(@request() req: Request, @response() res: Response) {
         await this.commentService.update(req);
         return res.status(204)
                   .send();

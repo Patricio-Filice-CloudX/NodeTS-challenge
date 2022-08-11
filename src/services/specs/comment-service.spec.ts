@@ -1,17 +1,17 @@
 import 'reflect-metadata';
-import ArticleService from '../article-service';
+import CommentService from '../comment-service';
 import { Request } from 'express'
 import { IQueryService } from '../interfaces/iquery-service';
 import { ICommentRepository } from '../../persistence/interfaces/icomment-repository';
 import { IArticleRepository } from '../../persistence/interfaces/iarticle-repository';
 import { anyFunction, mock, MockProxy } from "jest-mock-extended";
-import { IArticle } from '../../models/article.model';
 import { KeyQuery } from '../key-query';
 import { PaginationRequest } from '../../requests/paginaton-request';
 import { PaginatedResult } from '../../persistence/paginated-result';
+import { IComment } from '../../models/comment.model';
 
-describe("Article Service", () => {
-    let articleService: ArticleService;
+describe("Comment Service", () => {
+    let commentService: CommentService;
     let queryServiceMock: MockProxy<IQueryService>;
     let commentRepositoryMock: MockProxy<ICommentRepository>;
     let articleRepositoryMock: MockProxy<IArticleRepository>;
@@ -20,35 +20,40 @@ describe("Article Service", () => {
         queryServiceMock = mock<IQueryService>();
         commentRepositoryMock = mock<ICommentRepository>();
         articleRepositoryMock = mock<IArticleRepository>();
-        articleService = new ArticleService(articleRepositoryMock, commentRepositoryMock, queryServiceMock);
+        commentService = new CommentService(articleRepositoryMock, commentRepositoryMock, queryServiceMock);
     })
 
-    it("Should create an article", async () => {
+    it("Should create a comment", async () => {        
         const bodyRequest = {
-            title: "A title",
             author: "A author",
             body: "Some body"
         };
 
+        const paramsRequest = {
+            articleId: "123456789"
+        };
+
         const request = {
-            body: bodyRequest
+            body: bodyRequest,
+            params: paramsRequest as any
         } as Request;
 
-        const articleId = "123456789"
+        const commentId = "123456789"
 
-        articleRepositoryMock.create
+        commentRepositoryMock.create
                          .calledWith(expect.objectContaining(bodyRequest))
-                         .mockResolvedValueOnce({ id: articleId } as IArticle);
+                         .mockResolvedValueOnce({ id: commentId } as IComment);
 
-        expect(await articleService.create(request)).toBe(articleId);
+        expect(await commentService.create(request)).toBe(commentId);
 
-        expect(articleRepositoryMock.create).toBeCalledTimes(1);
-        expect(articleRepositoryMock.create).toHaveBeenCalledWith(expect.objectContaining(bodyRequest));
+        expect(articleRepositoryMock.find).toBeCalledTimes(1);
+        expect(articleRepositoryMock.find).toHaveBeenCalledWith(paramsRequest.articleId);
+        expect(commentRepositoryMock.create).toBeCalledTimes(1);
+        expect(commentRepositoryMock.create).toHaveBeenCalledWith(expect.objectContaining({ ...bodyRequest, article: paramsRequest.articleId }));
     });
 
-    it("Should list articles", async () => {
+    it("Should list comments", async () => {
         const queryRequest = {
-            title: "A title",
             author: "A author",
             body: "Some body"
         };
@@ -62,77 +67,76 @@ describe("Article Service", () => {
         };
 
         const paginatedRequest = {} as PaginationRequest;
-        const paginatedResult = {} as PaginatedResult<IArticle>;
+        const paginatedResult = {} as PaginatedResult<IComment>;
 
         queryServiceMock.createQueryObject
                     .calledWith(expect.objectContaining(queryRequest), expect.arrayContaining(
                         [
-                            expect.objectContaining(new KeyQuery<any>("title", queryServiceMock.addRegex)),
                             expect.objectContaining(new KeyQuery<any>("author", queryServiceMock.addRegex)),
                             expect.objectContaining(new KeyQuery<any>("body", queryServiceMock.addRegex))
                         ]) )
                     .mockReturnValueOnce(queryObject);
 
         queryServiceMock.getPaginatedRequest    
-                    .calledWith(request, "title" as any)
+                    .calledWith(request, "author" as any)
                     .mockReturnValue(paginatedRequest);
 
-        articleRepositoryMock.list
+        commentRepositoryMock.list
                          .calledWith(queryObject, paginatedRequest, anyFunction())
                          .mockResolvedValueOnce(paginatedResult);
 
-        expect(await articleService.list(request)).toBe(paginatedResult);
+        expect(await commentService.list(request)).toBe(paginatedResult);
 
         expect(queryServiceMock.createQueryObject).toHaveBeenCalledTimes(1);
         expect(queryServiceMock.createQueryObject).toHaveBeenCalledWith(expect.objectContaining(queryRequest), expect.arrayContaining(
                                                                         [
-                                                                            expect.objectContaining(new KeyQuery<any>("title", queryServiceMock.addRegex)),
                                                                             expect.objectContaining(new KeyQuery<any>("author", queryServiceMock.addRegex)),
                                                                             expect.objectContaining(new KeyQuery<any>("body", queryServiceMock.addRegex))
                                                                         ]));
 
         
         expect(queryServiceMock.getPaginatedRequest).toHaveBeenCalledTimes(1);
-        expect(queryServiceMock.getPaginatedRequest).toHaveBeenCalledWith(request, "title" as any);
+        expect(queryServiceMock.getPaginatedRequest).toHaveBeenCalledWith(request, "author" as any);
 
-        expect(articleRepositoryMock.list).toHaveBeenCalledTimes(1);
-        expect(articleRepositoryMock.list).toHaveBeenCalledWith(queryObject, paginatedRequest, anyFunction());
+        expect(commentRepositoryMock.list).toHaveBeenCalledTimes(1);
+        expect(commentRepositoryMock.list).toHaveBeenCalledWith(queryObject, paginatedRequest, anyFunction());
     });
 
-    it("Should get an article", async () => {
+    it("Should get a comment", async () => {
         const paramsRequest = {
-            articleId: "123456789"
+            articleId: "123456789",
+            commentId: "987654321"
         }
 
         const request = {
             params: paramsRequest as any
         } as Request;
 
-        const article = {
-            title: "A title",
+        const comment = {
             author: "A author",
-            body: "Some body"
-        } as IArticle
+            body: "Some body",
+            article: { }
+        } as IComment;
 
-        articleRepositoryMock.find
-                         .calledWith(paramsRequest.articleId)
-                         .mockResolvedValueOnce(article)
+        commentRepositoryMock.find
+                         .calledWith(paramsRequest.commentId)
+                         .mockResolvedValueOnce(comment)
 
-        expect(await articleService.get(request)).toEqual(article);
+        expect(await commentService.get(request)).toEqual(comment);
 
-        expect(articleRepositoryMock.find).toBeCalledTimes(1);
-        expect(articleRepositoryMock.find).toHaveBeenCalledWith(paramsRequest.articleId);
+        expect(commentRepositoryMock.find).toBeCalledTimes(1);
+        expect(commentRepositoryMock.find).toHaveBeenCalledWith(paramsRequest.commentId);
     });
 
-    it("Should update an article", async () => {
+    it("Should update a comment", async () => {
         const bodyRequest = {
-            title: "A title",
             author: "A author",
-            body: "Some body"
+            body: "Some body",
         };
 
         const paramsRequest = {
-            articleId: "123456789"
+            articleId: "123456789",
+            commentId: "987654321"
         }
 
         const request = {
@@ -140,26 +144,27 @@ describe("Article Service", () => {
             params: paramsRequest as any
         } as Request;
 
-        await articleService.update(request);
+        await commentService.update(request);
 
-        expect(articleRepositoryMock.update).toBeCalledTimes(1);
-        expect(articleRepositoryMock.update).toHaveBeenCalledWith(paramsRequest.articleId, expect.objectContaining(bodyRequest));
+        expect(articleRepositoryMock.find).toBeCalledTimes(1);
+        expect(articleRepositoryMock.find).toHaveBeenCalledWith(paramsRequest.articleId);
+        expect(commentRepositoryMock.update).toBeCalledTimes(1);
+        expect(commentRepositoryMock.update).toHaveBeenCalledWith(paramsRequest.commentId, expect.objectContaining({ ...bodyRequest, article: paramsRequest.articleId }));
     });
 
-    it("Should delete an article", async () => {
+    it("Should delete a comment", async () => {
         const paramsRequest = {
-            articleId: "123456789"
+            articleId: "123456789",
+            commentId: "987654321"
         }
 
         const request = {
             params: paramsRequest as any
         } as Request;
 
-        await articleService.delete(request);
+        await commentService.delete(request);
 
-        expect(articleRepositoryMock.delete).toBeCalledTimes(1);
-        expect(articleRepositoryMock.delete).toHaveBeenCalledWith(paramsRequest.articleId);
-        expect(commentRepositoryMock.deleteMany).toBeCalledTimes(1);
-        expect(commentRepositoryMock.deleteMany).toHaveBeenCalledWith(expect.objectContaining({ article: paramsRequest.articleId }));
+        expect(commentRepositoryMock.delete).toBeCalledTimes(1);
+        expect(commentRepositoryMock.delete).toHaveBeenCalledWith(paramsRequest.commentId);
     });
 })

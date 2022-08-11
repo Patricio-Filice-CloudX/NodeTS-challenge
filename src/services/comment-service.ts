@@ -12,7 +12,7 @@ import { IQueryService } from "./interfaces/iquery-service";
 import { KeyQuery } from "./key-query";
 
 @injectable()
-export class CommentService implements ICommentService {
+export default class CommentService implements ICommentService {
     
     constructor(@inject(REPOSITORY_IDENTIFIERS.ARTICLE_REPOSITORY) private readonly articleRepository: IArticleRepository,
                 @inject(REPOSITORY_IDENTIFIERS.COMMENT_REPOSITORY) private readonly commentRepository: ICommentRepository,

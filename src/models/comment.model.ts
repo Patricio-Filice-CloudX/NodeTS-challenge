@@ -1,6 +1,7 @@
 import { Document, Schema, model } from "mongoose";
 import { IArticle } from "./article.model";
 
+/// Would have been more useful to use the createdAt property as a sort value. Wasn't added to be more focused on other components of the project.
 export interface IComment extends Document {
     body: string;
     author: string;

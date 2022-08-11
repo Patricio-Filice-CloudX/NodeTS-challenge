@@ -1,14 +1,17 @@
 import { injectable } from 'inversify';
-import { FilterQuery, Model, Document, HydratedDocument, Query, UpdateQuery, LeanDocument } from 'mongoose'
+import { FilterQuery, Document, HydratedDocument, Query, UpdateQuery, LeanDocument } from 'mongoose'
 import { EntityNotFoundError } from '../errors/entity-not-found-error';
 import { PaginationRequest } from '../requests/paginaton-request';
 import { EntityName } from '../types';
+import { IModelWrapper } from './interfaces/imodel-wrapper';
 import { IRepository } from './interfaces/irepository';
 import { PaginatedResult } from './paginated-result';
 
 @injectable()
 export default abstract class Repository<TDocument extends Document> implements IRepository<TDocument> {
     
+    constructor(private readonly modelWrapper: IModelWrapper<TDocument>) { }
+
     protected abstract entityName: EntityName;
 
     async list(query: FilterQuery<TDocument>, paginationRequest: PaginationRequest, mapTo: (document: LeanDocument<HydratedDocument<TDocument, {}, {}>>) => TDocument): Promise<PaginatedResult<TDocument>> {
@@ -60,7 +63,9 @@ export default abstract class Repository<TDocument extends Document> implements 
                   .deleteMany(filterQuery);
     }
 
-    protected abstract getModel(): Model<TDocument, {}, {}, {}, any>
+    protected getModel() {
+        return this.modelWrapper.getModel();
+    }
 
     protected abstract execFind(query: Query<HydratedDocument<TDocument, {}, {}> | null, HydratedDocument<TDocument, {}, {}>, {}, TDocument>): Promise<TDocument | null>;
 
