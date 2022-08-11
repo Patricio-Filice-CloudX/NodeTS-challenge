@@ -37,10 +37,11 @@ export default class CommentService implements ICommentService {
             body: request.query.body
         };
 
-        const queryObject = this.queryService.createQueryObject(queryParams, [
+        const queryParamsObject = this.queryService.createQueryObject(queryParams, [
             new KeyQuery("author", this.queryService.addRegex),
             new KeyQuery("body", this.queryService.addRegex)
         ]);
+        const queryObject = { ...queryParamsObject, article: request.params.articleId };
         return this.commentRepository.list(queryObject,
                                            this.queryService.getPaginatedRequest<IComment>(request, "author"),
                                            cr => {

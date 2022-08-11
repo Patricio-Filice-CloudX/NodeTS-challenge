@@ -58,32 +58,36 @@ describe("Comment Service", () => {
             body: "Some body"
         };
 
+        const paramsRequest = {
+            articleId: "123456789"
+        };
+
         const request = {
+            params: paramsRequest as any,
             query: queryRequest as any
         } as Request;
 
         const queryObject = {
             key: "value"
         };
-
         const paginatedRequest = {} as PaginationRequest;
         const paginatedResult = {} as PaginatedResult<IComment>;
 
         queryServiceMock.createQueryObject
-                    .calledWith(expect.objectContaining(queryRequest), expect.arrayContaining(
-                        [
-                            expect.objectContaining(new KeyQuery<any>("author", queryServiceMock.addRegex)),
-                            expect.objectContaining(new KeyQuery<any>("body", queryServiceMock.addRegex))
-                        ]) )
-                    .mockReturnValueOnce(queryObject);
+                        .calledWith(expect.objectContaining(queryRequest), expect.arrayContaining(
+                            [
+                                expect.objectContaining(new KeyQuery<any>("author", queryServiceMock.addRegex)),
+                                expect.objectContaining(new KeyQuery<any>("body", queryServiceMock.addRegex))
+                            ]) )
+                        .mockReturnValueOnce(queryObject);
 
         queryServiceMock.getPaginatedRequest    
-                    .calledWith(request, "author" as any)
-                    .mockReturnValue(paginatedRequest);
+                        .calledWith(request, "author" as any)
+                        .mockReturnValue(paginatedRequest);
 
         commentRepositoryMock.list
-                         .calledWith(queryObject, paginatedRequest, anyFunction())
-                         .mockResolvedValueOnce(paginatedResult);
+                            .calledWith(expect.objectContaining({ ...queryObject, article: paramsRequest.articleId }), paginatedRequest, anyFunction())
+                            .mockResolvedValueOnce(paginatedResult);
 
         expect(await commentService.list(request)).toBe(paginatedResult);
 
@@ -99,7 +103,7 @@ describe("Comment Service", () => {
         expect(queryServiceMock.getPaginatedRequest).toHaveBeenCalledWith(request, "author" as any);
 
         expect(commentRepositoryMock.list).toHaveBeenCalledTimes(1);
-        expect(commentRepositoryMock.list).toHaveBeenCalledWith(queryObject, paginatedRequest, anyFunction());
+        expect(commentRepositoryMock.list).toHaveBeenCalledWith(expect.objectContaining({ ...queryObject, article: paramsRequest.articleId }), paginatedRequest, anyFunction());
     });
 
     it("Should get a comment", async () => {
