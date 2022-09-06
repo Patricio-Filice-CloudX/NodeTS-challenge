@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "ts-node-dev src/index.ts",
+    "dev": "ts-node-dev --files --transpile-only --respawn --inspect=4321 --project tsconfig.json src/index.ts",
     "start": "node build/index.js",
     "tsc": "tsc",
     "test": "jest -c ./jest.unit.json",
